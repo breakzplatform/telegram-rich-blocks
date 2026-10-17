@@ -48,3 +48,7 @@ test('JSON passthrough and light validation',()=>{
   expect(()=>parseInput({blocks:'bad'})).toThrow();
   expect(()=>parseInput({blocks:raw.blocks,markdown:'conflict'})).toThrow();
 });
+test('unsupported media extensions remain literal',()=>{
+ for(const source of ['![video](https://example.com/a.mp4)','![unknown](https://example.com/download)']) expect(markdown(source).blocks).toEqual([{type:'paragraph',text:source}]);
+});
+test('malformed JSON with blocks never silently becomes prose',()=>expect(()=>parseInput('{"blocks":42}')).toThrow());

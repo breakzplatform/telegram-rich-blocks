@@ -32,16 +32,25 @@ function measure(value:unknown, depth=0, context=''): Usage {
     } else if(key==='cells') {
       if(!Array.isArray(child)) throw new InputError('Table cells must be rows');
       usage.blocks+=child.length;
+      const occupied:number[]=[];
       for(const row of child) {
         if(!Array.isArray(row)) throw new InputError('Table cells must be rows');
         let columns=0;
         for(const cell of row) {
           if(!cell || typeof cell!=='object') throw new InputError('Invalid table cell');
           for(const key of ['colspan','rowspan']) if(cell[key]!==undefined && (!Number.isInteger(cell[key]) || cell[key]<1)) throw new InputError('Table spans must be positive integers');
-          columns+=cell.colspan ?? 1;
+          while((occupied[columns] ?? 0)>0) columns++;
+          const end=columns+(cell.colspan ?? 1);
+          if(end>LIMITS.columns) throw new InputError('Tables support at most 20 columns');
+          for(let column=columns;column<end;column++) {
+            if((occupied[column] ?? 0)>0) throw new InputError('Overlapping table spans');
+            occupied[column]=cell.rowspan ?? 1;
+          }
+          columns=end;
         }
         if(columns>LIMITS.columns) throw new InputError('Tables support at most 20 columns');
         add(measure(row,depth+1,'cell'));
+        for(let column=0;column<occupied.length;column++) occupied[column]=Math.max(0,occupied[column]-1);
       }
     } else if(key==='caption' || key==='buttons' || key==='button') add(measure(child,depth+1,key));
   }

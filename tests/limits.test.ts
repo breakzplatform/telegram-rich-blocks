@@ -27,3 +27,12 @@ test('plaintext retains content, links, media, table and maps',()=>{
  for(const value of ['Title','Hi site (https://example.com)','- first','A | B','1 | 2','https://example.com/a.jpg','1, 2','More','body']) expect(text).toContain(value);
  expect(text).not.toContain('**');
 });
+test('rowspans contribute to the effective column count',()=>{
+ const cell={text:'x',align:'left',valign:'top'};
+ const cells=[[{...cell,colspan:20,rowspan:2}],[cell]];
+ expect(()=>splitMessage({blocks:[{type:'table',cells}]})).toThrow('20');
+});
+test('plain rendering covers footer, code, quotes and buttons',()=>{
+ const source='> quote\n\n>! secret\n\n```footer\nFooter\n```\n\n```ts\nx = 1\n```\n\n```buttons\nOpen | https://example.com\n```';
+ expect(plaintext(markdown(source))).toBe('quote\n\nsecret\n\nFooter\n\nx = 1\n\nOpen (https://example.com)');
+});

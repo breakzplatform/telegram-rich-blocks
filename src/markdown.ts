@@ -101,7 +101,7 @@ export function markdown(source: string, depth = 0): RichMessage {
     }
     const media=line.match(/^!\[([^\]]*)\]\(([^\s)]+)\)$/);
     if(media) {
-      if(urlAllowed(media[2])) { const type=/\.(png|jpe?g|webp)(?:[?#]|$)/i.test(media[2])?'photo':'document'; blocks.push({type,[type]:{type,media:media[2]},...(media[1]?{caption:{text:inline(media[1])}}:{})}); }
+      if(urlAllowed(media[2]) && /\.(png|jpe?g|webp|pdf|zip)(?:[?#]|$)/i.test(media[2])) { const type=/\.(png|jpe?g|webp)(?:[?#]|$)/i.test(media[2])?'photo':'document'; blocks.push({type,[type]:{type,media:media[2]},...(media[1]?{caption:{text:inline(media[1])}}:{})}); }
       else blocks.push(paragraph(line,true));
       position++; continue;
     }
