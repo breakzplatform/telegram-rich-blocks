@@ -148,3 +148,31 @@ test("partial failure reports completed IDs", async () => {
     }),
   ).rejects.toThrow("8");
 });
+
+test("unsupported drafts and edits return new persistent fallback IDs", async () => {
+  const { api, requests } = fake((method) =>
+    method === "sendMessage"
+      ? Response.json({ ok: true, result: { message_id: 11 } })
+      : Response.json({
+          ok: false,
+          error_code: 400,
+          description: "unsupported",
+        }),
+  );
+  expect(await api.draft("42", 1, markdown("draft"))).toEqual({
+    ok: true,
+    message_ids: [11],
+    fallback: true,
+  });
+  expect(await api.edit("42", 2, markdown("edit"))).toEqual({
+    ok: true,
+    message_ids: [11],
+    fallback: true,
+  });
+  expect(requests.map((request) => request.method)).toEqual([
+    "sendRichMessageDraft",
+    "sendMessage",
+    "editMessageText",
+    "sendMessage",
+  ]);
+});

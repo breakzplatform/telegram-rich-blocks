@@ -161,3 +161,23 @@ test("configuration defaults and rejects inline credentials", () => {
     }),
   ).toThrow();
 });
+
+test("streamed bodies without content length still enforce the limit", async () => {
+  const { server } = setup();
+  const body = new ReadableStream({
+    start(controller) {
+      for (let index = 0; index < 17; index++)
+        controller.enqueue(new Uint8Array(16384).fill(32));
+      controller.close();
+    },
+  });
+  const response = await fetch(new URL("/preview", server.url), {
+    method: "POST",
+    headers: {
+      authorization: "Bearer client-example",
+      "content-type": "application/json",
+    },
+    body,
+  });
+  expect(response.status).toBe(413);
+});
