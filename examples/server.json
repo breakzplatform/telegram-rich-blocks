@@ -1,0 +1,11 @@
+{
+  "listen": "127.0.0.1:8787",
+  "bots": {"notifier": {"token_env": "NOTIFIER_BOT_TOKEN"}},
+  "clients": {
+    "n8n": {
+      "token_sha256": "REPLACE_WITH_64_HEX_CHARACTERS_FROM_SHA256",
+      "bots": ["notifier"],
+      "chats": ["123456789", "-1001234567890"]
+    }
+  }
+}
