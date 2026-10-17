@@ -1,1 +1,15 @@
-{"mcpServers":{"telegram-rich":{"command":"bun","args":["run","--cwd","${CLAUDE_PLUGIN_ROOT}","--shell=bun","--silent","start"]}}}
+{
+  "mcpServers": {
+    "telegram-rich": {
+      "command": "bun",
+      "args": [
+        "run",
+        "--cwd",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--shell=bun",
+        "--silent",
+        "start"
+      ]
+    }
+  }
+}
