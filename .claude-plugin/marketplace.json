@@ -1,0 +1,1 @@
+{"name":"telegram-rich-marketplace","owner":{"name":"Joselito"},"plugins":[{"name":"telegram-rich","source":"./","description":"Rich messages for Telegram senders","version":"0.1.0"}]}
