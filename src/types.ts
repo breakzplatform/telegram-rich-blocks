@@ -20,13 +20,26 @@ export interface Cell {
   colspan?: number;
   rowspan?: number;
 }
+export const buttonStyles = new Set(["danger", "success", "primary", "link"]);
+export interface RichMessageButton {
+  text: RichText;
+  url?: string;
+  callback_data?: string;
+  /** "link" is only valid on callback buttons. */
+  style?: string;
+  [field: string]: unknown;
+}
+export const callbackDataValid = (value: unknown) =>
+  typeof value === "string" &&
+  value.length > 0 &&
+  Buffer.byteLength(value, "utf8") <= 64;
 export interface Block {
   type: string;
   text?: RichText;
   blocks?: Block[];
   items?: ListItem[];
   cells?: Cell[][];
-  buttons?: { text: RichText; url?: string; [field: string]: unknown }[];
+  buttons?: RichMessageButton[];
   summary?: RichText;
   [field: string]: unknown;
 }

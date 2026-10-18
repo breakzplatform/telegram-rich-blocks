@@ -1,4 +1,10 @@
-import { InputError, type Block, type RichMessage } from "./types";
+import {
+  InputError,
+  buttonStyles,
+  callbackDataValid,
+  type Block,
+  type RichMessage,
+} from "./types";
 export const LIMITS = {
   characters: 32768,
   blocks: 500,
@@ -54,6 +60,26 @@ function measure(value: unknown, depth = 0, context = ""): Usage {
         record.buttons.length > 8)
     )
       throw new InputError("Button rows require 1-8 buttons");
+    if (record.type === "buttons")
+      for (const button of record.buttons as Record<string, unknown>[]) {
+        if (!button || typeof button !== "object")
+          throw new InputError("Invalid button");
+        if (button.url !== undefined && button.callback_data !== undefined)
+          throw new InputError("A button takes either url or callback_data");
+        if (
+          button.callback_data !== undefined &&
+          !callbackDataValid(button.callback_data)
+        )
+          throw new InputError("callback_data must be 1-64 bytes");
+        if (
+          button.style !== undefined &&
+          (!buttonStyles.has(String(button.style)) ||
+            (button.style === "link" && button.callback_data === undefined))
+        )
+          throw new InputError(
+            'Button style must be danger, success, primary or (callback only) link',
+          );
+      }
     if (
       record.type === "heading" &&
       (!Number.isInteger(record.size) ||

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- Callback buttons in the Markdown `buttons` fence (`Label | callback:data`) and
+  an optional style suffix (`danger`, `success`, `primary`, callback-only `link`)
+  for callback and URL buttons. Raw blocks validate `callback_data` length and
+  styles. The plain-text fallback keeps only the label of a callback button.
+
 ### Changed
 
 - Renamed the project, package, plugin and CLI from telegram-rich to telegram-rich-blocks.

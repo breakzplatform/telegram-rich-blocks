@@ -209,10 +209,27 @@ Telegram's native rich Markdown parser. It emits explicit blocks without
 | `<!-- table:compact -->` immediately before a table | Compact table |
 | `<details><summary>T</summary>body</details>` | Details; body supports this dialect; optional `open` |
 | Fenced `footer` | Footer with inline formatting |
-| Fenced `buttons`, lines `Label \| https://url` | URL buttons; rows of at most eight, labels stay plain |
+| Fenced `buttons`, lines `Label \| https://url [\| style]` | URL buttons; rows of at most eight, labels stay plain |
+| Fenced `buttons`, lines `Label \| callback:data [\| style]` | Callback buttons; `data` is 1–64 UTF-8 bytes without spaces |
 | Fenced `map`, `lat,lon[,zoom]` | Map; latitude ±90, longitude ±180, integer zoom 0–24 |
 | Standalone `![caption](https://url/photo.jpg)` | Photo for .jpg/.jpeg/.png/.webp URLs |
 | Standalone `![caption](https://url/report.pdf)` | Document for .pdf/.zip URLs |
+
+Button styles are `danger`, `success`, `primary`, and `link` (callback buttons
+only). One invalid line (bad URL, oversized callback data, unknown style) makes
+the whole `buttons` fence literal text. Example:
+
+````markdown
+```buttons
+Approve | callback:approve:42 | success
+Reject | callback:reject:42 | danger
+Runbook | https://example.com/runbook
+```
+````
+
+This library only sends callback buttons. When someone taps one, Telegram
+delivers a `callback_query` update to the bot; consuming it (and calling
+`answerCallbackQuery`) is the bot's job, through polling or a webhook.
 
 Nested inline formatting is supported for balanced delimiters; arbitrary
 CommonMark delimiter/escape rules are not. Table cells support inline text,
@@ -238,7 +255,8 @@ See [docs/api-notes.md](docs/api-notes.md) for exact API fields and sources.
 Only HTTP 404, API error code 404, “method not found” or “unsupported” errors
 trigger fallback. The same content is rendered as plain text, preserving link
 and media URLs, and split conservatively to 4096 UTF-16 units. Fallback does not
-upload attachments or preserve interactive controls. Authentication failures,
+upload attachments or preserve interactive controls: a callback button becomes
+just its label, so its callback is lost. Authentication failures,
 rate limits, malformed content errors and network failures otherwise surface
 without retrying or silently changing format. All error paths redact bot tokens.
 

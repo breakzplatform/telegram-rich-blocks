@@ -4,6 +4,9 @@ import {
   type RichMessage,
   type RichText,
   type ListItem,
+  type RichMessageButton,
+  buttonStyles,
+  callbackDataValid,
 } from "./types";
 
 const markers: [string, string][] = [
@@ -78,6 +81,24 @@ const urlAllowed = (value: string) => {
   }
 };
 
+const buttonPattern =
+  /^(.+?)\s*\|\s*(callback:(\S+)|https?:\/\/\S+)(?:\s*\|\s*(\S+))?\s*$/;
+// `Label | https://url [| style]` or `Label | callback:data [| style]`;
+// anything else makes the whole fence literal.
+function button(line: string): RichMessageButton | undefined {
+  const match = line.match(buttonPattern);
+  if (!match) return undefined;
+  const [, label, target, data, style] = match;
+  if (style !== undefined && !buttonStyles.has(style)) return undefined;
+  const text = label.trim();
+  if (data !== undefined) {
+    if (!callbackDataValid(data)) return undefined;
+    return { text, callback_data: data, ...(style ? { style } : {}) };
+  }
+  if (!urlAllowed(target) || style === "link") return undefined;
+  return { text, url: target, ...(style ? { style } : {}) };
+}
+
 export function markdown(source: string, depth = 0): RichMessage {
   if (depth >= 8) return { blocks: [paragraph(source, true)] };
   const lines = source.replace(/\r\n?/g, "\n").split("\n");
@@ -137,19 +158,14 @@ export function markdown(source: string, depth = 0): RichMessage {
         const buttons = content
           .split("\n")
           .filter((value) => value.trim())
-          .map((value) => value.match(/^(.+?)\s*\|\s*(https?:\/\/\S+)\s*$/));
-        if (
-          !buttons.length ||
-          buttons.some((value) => !value || !urlAllowed(value[2]))
-        )
+          .map(button);
+        if (!buttons.length || buttons.some((value) => !value))
           blocks.push(literal());
         else
           for (let index = 0; index < buttons.length; index += 8)
             blocks.push({
               type: "buttons",
-              buttons: buttons
-                .slice(index, index + 8)
-                .map((value) => ({ text: value![1].trim(), url: value![2] })),
+              buttons: buttons.slice(index, index + 8) as RichMessageButton[],
             });
       } else
         blocks.push({

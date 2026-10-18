@@ -17,10 +17,12 @@ explicit input blocks arrived in 10.2 (2026-07-14).
 - `editMessageText`: `chat_id`, `message_id`, `rich_message` (no `text` needed).
 - `sendMessage` fallback: `chat_id`, `text` (1–4096 characters), optional
   `disable_notification`, `message_thread_id`, `reply_parameters: {message_id}`.
-- `InputRichMessage`: `blocks`, optional `is_rtl`, `skip_entity_detection`.
-  Exactly one of `blocks`, `markdown`, `html` is allowed by Telegram; this
-  library's raw input accepts only the blocks form. The API also has `media`
-  for its native markdown/html modes; we do not emit it.
+- `InputRichMessage`: exactly one of `blocks`, `html`, `markdown` (Telegram's
+  own rich Markdown), plus optional `media`, `is_rtl`, `skip_entity_detection`.
+  This library emits only `blocks` and `is_rtl`/`skip_entity_detection`: it
+  keeps converting its own Markdown dialect to blocks because it needs the
+  block structure for limit-aware splitting and the plain-text fallback. Raw
+  input accepts only the blocks form.
 - `RichText`: string, array of RichText, or tagged object. Converter emits
   `type` + `text` for `bold`, `italic`, `underline`, `strikethrough`, `spoiler`,
   `code`; `url` additionally has `url`. Mentions and hashtags remain strings.
@@ -40,7 +42,15 @@ explicit input blocks arrived in 10.2 (2026-07-14).
 - `InputRichBlockDetails`: `type: details`, `summary`, `blocks`, optional
   `is_open: true`.
 - `InputRichBlockButtons`: `type: buttons`, `buttons` (1–8).
-  `RichMessageButton`: `text` (plain string here), `url`. No `type` field.
+  `RichMessageButton`: `text` (RichText limited to plain text, custom emoji and
+  datetime; the converter emits a plain string), optional `style` (`danger`,
+  `success`, `primary`, or `link`, the last only for callback buttons), and
+  exactly one action: `url` (HTTP or `tg://`), `callback_data` (1–64 bytes),
+  `web_app`, among others. No `type` field. The converter emits `url` or
+  `callback_data`; raw blocks may carry the other actions.
+- `RichTextButton`: inline rich text element `type: button`, `button`
+  (`RichMessageButton`). Passed through in raw input; not emitted by the
+  converter.
 - `InputRichBlockMap`: `type: map`, `location: {latitude, longitude}`, optional
   `zoom` (0–24). Optional raw `width`/`height`: 0–10000, sum ≤10000, ratio ≤20.
 - `InputRichBlockPhoto` / `InputRichBlockDocument`: `type: photo` / `document`,
