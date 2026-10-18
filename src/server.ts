@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { ApiError, TelegramApi, chatId } from "./api";
+import { ApiError, TelegramApi, chatId, redact } from "./api";
 import { contentInput, preview } from "./plugin";
 import { InputError } from "./types";
 export const MAX_BODY_BYTES = 256 * 1024;
@@ -154,7 +154,7 @@ export function startServer(
     ...listenAddress(config.listen),
     maxRequestBodySize: MAX_BODY_BYTES + 1024,
     idleTimeout: 30,
-    async fetch(request) {
+    async fetch(request, server) {
       const path = new URL(request.url).pathname;
       if (request.method === "GET" && path === "/health")
         return Response.json({ ok: true });
@@ -163,6 +163,7 @@ export function startServer(
         chat: string | undefined,
         size = 0,
         status = 200;
+      let reason: string | undefined;
       try {
         if (request.method !== "POST" || !["/send", "/preview"].includes(path))
           throw new HttpError(404, "Not found");
@@ -194,6 +195,7 @@ export function startServer(
           throw new HttpError(403, "Chat is not allowed");
         chat = identifier;
         const message = contentInput(body, "blocks");
+        server.timeout(request, 0);
         const result = await bots
           .get(botName)!
           .send(chat, message, {
@@ -209,8 +211,15 @@ export function startServer(
             : error instanceof InputError
               ? 400
               : error instanceof ApiError
-                ? 502
+                ? error.status === 429
+                  ? 429
+                  : 502
                 : 500;
+        if (error instanceof ApiError)
+          reason = redact(
+            error,
+            botName ? environment[config.bots[botName].token_env] : undefined,
+          );
         return Response.json(
           {
             ok: false,
@@ -218,13 +227,18 @@ export function startServer(
               error instanceof HttpError || error instanceof InputError
                 ? error.message
                 : error instanceof ApiError
-                  ? "Telegram request failed"
+                  ? reason
                   : "Internal server error",
             ...(error instanceof ApiError
               ? { message_ids: error.message_ids }
               : {}),
           },
-          { status },
+          {
+            status,
+            ...(status === 429 && error instanceof ApiError
+              ? { headers: { "Retry-After": String(error.retry_after ?? 1) } }
+              : {}),
+          },
         );
       } finally {
         log(
@@ -234,6 +248,7 @@ export function startServer(
             client: clientName ?? null,
             size,
             status,
+            ...(reason !== undefined ? { error: reason } : {}),
           }),
         );
       }
