@@ -66,16 +66,27 @@ There is no published registry package required by these instructions.
 
 ```text
 telegram-rich send --chat ID [--token-env VAR | --token-file PATH]
-  [--silent] [--reply-to N] [--thread N] [--json] [--dry-run] [FILE|-]
+  [--silent] [--reply-to N] [--thread N] [--json] [--dry-run] [--no-allowlist] [FILE|-]
 telegram-rich preview [FILE|-]
 telegram-rich serve --config PATH
 ```
 
 Omitted input means stdin; `--` permits filenames starting with a dash.
 The default token is `TELEGRAM_BOT_TOKEN`. `--token-env` chooses another variable;
-`--token-file` reads a file containing only the token. The CLI does not read
-Claude's state or enforce its allowlist: possession of a bot token authorizes
-CLI sends. Keep token files owner-readable and avoid tokens in command arguments.
+`--token-file` lê um arquivo contendo apenas o token. A CLI verifica `access.json`
+a cada envio, usando a mesma allowlist do plugin: `allowFrom` para chats privados
+e `groups` para grupos. Arquivo ausente ou inválido impede o envio.
+`TELEGRAM_STATE_DIR` e `CLAUDE_CONFIG_DIR` selecionam o diretório conforme descrito
+acima. Para enviar explicitamente sem essa verificação, use `--no-allowlist`:
+
+```sh
+telegram-rich send --chat 123456789 --no-allowlist report.md
+```
+
+`TELEGRAM_STATE_DIR`, `CLAUDE_CONFIG_DIR` e `--token-file` expandem `~` e `~/`
+para o diretório pessoal. Preview e dry-run não exigem allowlist nem token.
+Mantenha os arquivos de token legíveis apenas pelo proprietário e evite tokens
+nos argumentos de comandos.
 
 `--json` strictly parses an InputRichMessage object. Without it, a valid JSON
 object containing `blocks` is also detected automatically. Preview prints one

@@ -1,5 +1,24 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- CLI sends now check the plugin's `access.json` allowlist by default; use
+  `--no-allowlist` to explicitly bypass it. Preview and dry-run remain offline.
+
+### Fixed
+
+- Honor Telegram `retry_after` with at most three retries and 60 seconds of total
+  waiting per API request, including multipart sends; preserve completed IDs.
+- Return HTTP 429 with `Retry-After` when Telegram rate limits are exhausted.
+- Treat unchanged-message edit errors as successful idempotent edits.
+- Include sanitized upstream error descriptions in HTTP responses and logs.
+- Expand home shorthand in state/config directories and CLI token-file paths.
+- Reject malformed block JSON instead of sending it as Markdown.
+- Redact configured tokens in MCP errors, including tokens loaded from `.env`.
+- Render map blocks without a location safely, preserving captions and credits.
+
 ## 0.1.0 — 2026-10-17
 
 ### Added
