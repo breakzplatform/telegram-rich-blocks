@@ -1,7 +1,7 @@
 ---
 name: telegram-rich-replies
 description: "Telegram rich messages beyond tables: maps, buttons, media, footers, edits (telegram-rich-blocks MCP)."
-version: 0.1.0
+version: 0.2.0
 author: Joselito
 license: Apache-2.0
 platforms: [linux, macos]
@@ -27,7 +27,9 @@ Reach for `rich_reply` only for what ordinary replies cannot do:
 - URL or callback buttons (fenced `buttons`);
 - a photo or PDF from an HTTPS URL;
 - a footer, or a precise multi-section layout (headings, dividers);
-- editing a rich message sent earlier (`rich_edit`, with its message ID).
+- editing a rich message sent earlier (`rich_edit`, with its message ID);
+- a proactive or scheduled message with any rich formatting: the built-in
+  `send_message` tool always sends legacy MarkdownV2.
 
 After a `rich_reply`, do not repeat its content in your final answer; reply
 with one short line or nothing more.

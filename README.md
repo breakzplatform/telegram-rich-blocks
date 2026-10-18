@@ -78,9 +78,11 @@ Groups are refused in this mode, because Hermes allowlists group senders, not
 group destinations. The CLI honours `TELEGRAM_RICH_HOST=hermes` too.
 
 Hermes can already render tables, task lists, `<details>` and math natively in
-ordinary replies (`platforms.telegram.extra.rich_messages: true`). The
+ordinary replies (`platforms.telegram.extra.rich_messages: true`), but its
+`send_message` tool, used for proactive and cron messages, stays on MarkdownV2. The
 [skill](integrations/hermes/SKILL.md) keeps those in ordinary replies and uses
-`rich_reply` for maps, buttons, URL media, footers and edits.
+`rich_reply` for maps, buttons, URL media, footers, edits and rich proactive
+messages.
 
 ## CLI
 
