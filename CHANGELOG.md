@@ -5,9 +5,6 @@
 ### Changed
 
 - Renamed the project, package, plugin and CLI from telegram-rich to telegram-rich-blocks.
-
-### Changed
-
 - CLI sends now check the plugin's `access.json` allowlist by default; use
   `--no-allowlist` to explicitly bypass it. Preview and dry-run remain offline.
 
