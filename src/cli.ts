@@ -9,13 +9,15 @@ import {
   redact,
 } from "./api";
 import { parseInput } from "./markdown";
-import { splitMessage } from "./limits";
+import { singleMessage, splitMessage } from "./limits";
 import { preview, assertAllowedChat, stateDirectory, expandHome, loadToken } from "./plugin";
 import { startServer, validateConfig } from "./server";
 import { InputError } from "./types";
 const usage = `telegram-rich-blocks preview [FILE|-]
 telegram-rich-blocks send --chat ID [--token-env VAR | --token-file PATH]
   [--silent] [--reply-to N] [--thread N] [--json] [--dry-run] [--no-allowlist] [FILE|-]
+telegram-rich-blocks edit --chat ID --message-id N [--token-env VAR | --token-file PATH]
+  [--json] [--no-allowlist] [FILE|-]
 telegram-rich-blocks serve --config PATH`;
 async function read(path: string): Promise<string> {
   try {
@@ -32,7 +34,7 @@ export async function main(arguments_: string[]): Promise<number> {
       return 0;
     }
     const [command, ...args] = arguments_;
-    if (!["send", "preview", "serve"].includes(command))
+    if (!["send", "edit", "preview", "serve"].includes(command))
       throw new InputError(usage);
     const flags = new Map<string, string | boolean>();
     const files: string[] = [];
@@ -49,9 +51,18 @@ export async function main(arguments_: string[]): Promise<number> {
             "dry-run",
             "no-allowlist",
           ]
-        : command === "serve"
-          ? ["config"]
-          : [];
+        : command === "edit"
+          ? [
+              "chat",
+              "message-id",
+              "token-env",
+              "token-file",
+              "json",
+              "no-allowlist",
+            ]
+          : command === "serve"
+            ? ["config"]
+            : [];
     for (let index = 0; index < args.length; index++) {
       const argument = args[index];
       if (argument === "--") {
@@ -96,11 +107,18 @@ export async function main(arguments_: string[]): Promise<number> {
       process.once("SIGTERM", shutdown);
       return 0;
     }
-    if (command === "send" && !flags.has("chat"))
+    const delivers = command === "send" || command === "edit";
+    if (delivers && !flags.has("chat"))
       throw new InputError("--chat is required");
+    if (command === "edit" && !flags.has("message-id"))
+      throw new InputError("--message-id is required");
     if (flags.has("token-env") && flags.has("token-file"))
       throw new InputError("Choose --token-env or --token-file");
-    const chat = command === "send" ? chatId(flags.get("chat")) : undefined;
+    const chat = delivers ? chatId(flags.get("chat")) : undefined;
+    const messageId =
+      command === "edit"
+        ? positiveInteger(flags.get("message-id"), "message-id")
+        : undefined;
     const options = {
       ...(flags.has("silent") ? { silent: true } : {}),
       ...(flags.has("reply-to")
@@ -126,6 +144,7 @@ export async function main(arguments_: string[]): Promise<number> {
       return 0;
     }
     const message = parseInput(input);
+    if (command === "edit") singleMessage(message);
     const parts = splitMessage(message);
     if (flags.has("dry-run")) {
       const requests = parts.map((part) => ({
@@ -148,8 +167,13 @@ export async function main(arguments_: string[]): Promise<number> {
         ? process.env[String(flags.get("token-env"))]
         : await loadToken(stateDirectory());
     if (!token) throw new InputError("Bot token is not configured");
+    const api = new TelegramApi(token);
     console.log(
-      JSON.stringify(await new TelegramApi(token).send(chat, message, options)),
+      JSON.stringify(
+        messageId === undefined
+          ? await api.send(chat, message, options)
+          : await api.edit(chat, messageId, message),
+      ),
     );
     return 0;
   } catch (error) {

@@ -8,6 +8,8 @@
   an optional style suffix (`danger`, `success`, `primary`, callback-only `link`)
   for callback and URL buttons. Raw blocks validate `callback_data` length and
   styles. The plain-text fallback keeps only the label of a callback button.
+- CLI `edit` command (`--chat`, `--message-id`) that edits a sent message with the
+  same token and allowlist rules as `send`.
 
 ### Changed
 

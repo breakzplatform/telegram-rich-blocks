@@ -67,6 +67,8 @@ There is no published registry package required by these instructions.
 ```text
 telegram-rich-blocks send --chat ID [--token-env VAR | --token-file PATH]
   [--silent] [--reply-to N] [--thread N] [--json] [--dry-run] [--no-allowlist] [FILE|-]
+telegram-rich-blocks edit --chat ID --message-id N [--token-env VAR | --token-file PATH]
+  [--json] [--no-allowlist] [FILE|-]
 telegram-rich-blocks preview [FILE|-]
 telegram-rich-blocks serve --config PATH
 ```
@@ -97,6 +99,16 @@ makes no network request. Send prints JSON with `ok`, `message_ids`, and
 `fallback: true` when applicable. Exit codes: **0 success, 1 API/transport error,
 2 usage/input/configuration error**. Failed multipart sends report completed IDs;
 do not blindly retry the whole input.
+
+`edit` replaces the content of a message the bot sent earlier
+(`editMessageText` with `rich_message`), with the same token and allowlist rules
+as `send`. The new content must fit one message; it prints the same JSON as
+`send`. Telegram's "message is not modified" error counts as success, so
+repeating an edit is safe:
+
+```sh
+telegram-rich-blocks edit --chat 123456789 --message-id 42 status.md
+```
 
 [Shell notifier](examples/notify.sh), [Python](examples/notify.py) and
 [PHP](examples/notify.php) examples inherit the token environment and pass content
