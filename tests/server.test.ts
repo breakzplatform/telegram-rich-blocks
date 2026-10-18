@@ -1,11 +1,12 @@
 import { afterEach, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { startServer, validateConfig, MAX_BODY_BYTES } from "../src/server";
-const servers: ReturnType<typeof Bun.serve>[] = [];
-afterEach(() => {
-  for (const server of servers.splice(0)) server.stop(true);
+import type { RunningServer } from "../src/http";
+const servers: { stop(force?: boolean): unknown }[] = [];
+afterEach(async () => {
+  for (const server of servers.splice(0)) await server.stop(true);
 });
-function setup() {
+async function setup() {
   const telegram = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
@@ -26,7 +27,7 @@ function setup() {
       },
     },
   });
-  const server = startServer(config, {
+  const server: RunningServer = await startServer(config, {
     environment: {
       TEST_BOT_TOKEN: "123:FAKE",
       TELEGRAM_API_BASE: telegram.url.origin,
@@ -46,14 +47,14 @@ function setup() {
   return { server, request, logs };
 }
 test("health needs no auth and reveals no configuration", async () => {
-  const { server } = setup();
+  const { server } = await setup();
   const response = await fetch(new URL("/health", server.url));
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ ok: true });
   expect(response.headers.has("access-control-allow-origin")).toBe(false);
 });
 test("authenticated send returns IDs and safe structured log", async () => {
-  const { request, logs } = setup();
+  const { request, logs } = await setup();
   const response = await request("/send", {
     bot: "test",
     chat_id: "42",
@@ -73,7 +74,7 @@ test("authenticated send returns IDs and safe structured log", async () => {
   expect(logs.join("")).not.toContain("FAKE");
 });
 test("auth, bot and chat restrictions", async () => {
-  const { request } = setup();
+  const { request } = await setup();
   expect(
     (
       await request(
@@ -99,7 +100,7 @@ test("auth, bot and chat restrictions", async () => {
   ).toEqual({ blocks: [{ type: "heading", size: 1, text: "hi" }] });
 });
 test("body size, content type and malformed JSON", async () => {
-  const { request, server } = setup();
+  const { request, server } = await setup();
   expect(
     (await request("/send", { markdown: "a".repeat(MAX_BODY_BYTES) })).status,
   ).toBe(413);
@@ -126,7 +127,7 @@ test("body size, content type and malformed JSON", async () => {
   ).toBe(400);
 });
 test("raw blocks and exclusive input validation", async () => {
-  const { request } = setup();
+  const { request } = await setup();
   expect(
     (
       await request("/send", {
@@ -163,7 +164,7 @@ test("configuration defaults and rejects inline credentials", () => {
 });
 
 test("streamed bodies without content length still enforce the limit", async () => {
-  const { server } = setup();
+  const { server } = await setup();
   const body = new ReadableStream({
     start(controller) {
       for (let index = 0; index < 17; index++)

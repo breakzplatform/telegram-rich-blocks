@@ -1,3 +1,4 @@
+import { setTimeout } from "node:timers/promises";
 import { singleMessage, splitMessage } from "./limits";
 import { plaintext } from "./plaintext";
 import { InputError, type RichMessage } from "./types";
@@ -69,6 +70,8 @@ export function requestOptions(options: SendOptions): Record<string, unknown> {
   };
 }
 export class TelegramApi {
+  /** Waits out a rate limit; replaceable so tests need not sleep. */
+  wait = (milliseconds: number): Promise<unknown> => setTimeout(milliseconds);
   constructor(
     private readonly token: string,
     private readonly base = process.env.TELEGRAM_API_BASE ??
@@ -128,7 +131,7 @@ export class TelegramApi {
             totalWait + retryAfter <= 60
           ) {
             totalWait += retryAfter;
-            await Bun.sleep(retryAfter * 1000);
+            await this.wait(retryAfter * 1000);
             continue;
           }
           throw new ApiError(

@@ -4,6 +4,9 @@
 
 ### Added
 
+- npm package for Node.js 20+, Bun and Deno: `telegram-rich-blocks` CLI,
+  library entry point with type declarations, and an `mcp` subcommand that
+  starts the MCP server on stdio.
 - Hermes Agent host (`TELEGRAM_RICH_HOST=hermes`): the MCP server and CLI take
   the bot token, `TELEGRAM_ALLOWED_USERS` allowlist and `TELEGRAM_HOME_CHANNEL`
   default chat from `$HERMES_HOME/.env`, re-read on every call. Ships a Hermes
@@ -19,6 +22,9 @@
 
 ### Changed
 
+- The HTTP service runs on `node:http` instead of `Bun.serve`; the API is
+  also exported as a Fetch handler (`createHandler`). `startServer` is now
+  asynchronous.
 - Renamed the shell example to `examples/notify.sh`.
 - Renamed the project, package, plugin and CLI from telegram-rich to telegram-rich-blocks.
 - CLI sends now check the plugin's `access.json` allowlist by default; use

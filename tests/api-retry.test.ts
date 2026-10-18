@@ -5,12 +5,13 @@ afterEach(() => mock.restore());
 function setup(responses: Response[]) {
   const waits: number[] = [];
   const bodies: any[] = [];
-  spyOn(Bun, "sleep").mockImplementation(async (duration) => { waits.push(Number(duration)); });
   spyOn(globalThis, "fetch").mockImplementation((async (_url, options) => {
     bodies.push(JSON.parse(String(options?.body)));
     return responses.shift()!;
   }) as typeof fetch);
-  return { api: new TelegramApi("123:FAKE"), waits, bodies };
+  const api = new TelegramApi("123:FAKE");
+  api.wait = async (duration) => waits.push(duration);
+  return { api, waits, bodies };
 }
 const success = (message_id: number) => Response.json({ ok: true, result: { message_id } });
 const limited = (retry_after: unknown) => Response.json({ ok: false, error_code: 429, description: "Too many requests", parameters: { retry_after } }, { status: 429 });

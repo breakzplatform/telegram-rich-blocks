@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { readFile } from "node:fs/promises";
+import { text } from "node:stream/consumers";
 import {
   TelegramApi,
   ApiError,
@@ -13,15 +14,17 @@ import { singleMessage, splitMessage } from "./limits";
 import { preview, assertHostAllows, hostToken, expandHome } from "./plugin";
 import { startServer, validateConfig } from "./server";
 import { InputError } from "./types";
+import { startMcp } from "./mcp";
 const usage = `telegram-rich-blocks preview [FILE|-]
 telegram-rich-blocks send --chat ID [--token-env VAR | --token-file PATH]
   [--silent] [--reply-to N] [--thread N] [--json] [--dry-run] [--no-allowlist] [FILE|-]
 telegram-rich-blocks edit --chat ID --message-id N [--token-env VAR | --token-file PATH]
   [--json] [--no-allowlist] [FILE|-]
-telegram-rich-blocks serve --config PATH`;
+telegram-rich-blocks serve --config PATH
+telegram-rich-blocks mcp`;
 async function read(path: string): Promise<string> {
   try {
-    return path === "-" ? await Bun.stdin.text() : await readFile(path, "utf8");
+    return path === "-" ? await text(process.stdin) : await readFile(path, "utf8");
   } catch {
     throw new InputError("Cannot read input file");
   }
@@ -34,6 +37,10 @@ export async function main(arguments_: string[]): Promise<number> {
       return 0;
     }
     const [command, ...args] = arguments_;
+    if (command === "mcp" && args.length === 0) {
+      await startMcp();
+      return 0;
+    }
     if (!["send", "edit", "preview", "serve"].includes(command))
       throw new InputError(usage);
     const flags = new Map<string, string | boolean>();
@@ -95,7 +102,7 @@ export async function main(arguments_: string[]): Promise<number> {
       } catch {
         throw new InputError("Cannot read JSON server configuration");
       }
-      const server = startServer(validateConfig(config));
+      const server = await startServer(validateConfig(config));
       console.error(
         JSON.stringify({ event: "listening", address: server.url.origin }),
       );

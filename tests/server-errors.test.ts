@@ -1,21 +1,17 @@
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { startServer } from "../src/server";
+import { createHandler } from "../src/server";
 afterEach(() => mock.restore());
 for (const status of [400, 401, 403, 429]) {
   test(`upstream ${status} returns and logs the sanitized description`, async () => {
     let handler: (request: Request) => Promise<Response>;
-    spyOn(Bun, "serve").mockImplementation(((options: any) => {
-      handler = (request) => options.fetch(request, { timeout() {} });
-      return {};
-    }) as typeof Bun.serve);
     spyOn(globalThis, "fetch").mockImplementation((async () => Response.json({
       ok: false, error_code: status,
       description: `Telegram refused 123:FAKE bot123:FAKE/path`,
       parameters: { retry_after: 61 },
     }, { status })) as unknown as typeof fetch);
     const logs: string[] = [];
-    startServer({ listen: "127.0.0.1:0", bots: { test: { token_env: "TOKEN" } }, clients: {
+    handler = createHandler({ listen: "127.0.0.1:0", bots: { test: { token_env: "TOKEN" } }, clients: {
       test: { token_sha256: createHash("sha256").update("client").digest("hex"), bots: ["test"], chats: ["42"] },
     } }, { environment: { TOKEN: "123:FAKE" }, log: (line) => logs.push(line) });
     const response = await handler!(new Request("http://localhost/send", {
@@ -35,11 +31,7 @@ for (const status of [400, 401, 403, 429]) {
 for (const streamed of [false, true]) {
   test(`body limit returns 413 ${streamed ? "without" : "with"} content-length`, async () => {
     let handler: (request: Request) => Promise<Response>;
-    spyOn(Bun, "serve").mockImplementation(((options: any) => {
-      handler = options.fetch;
-      return {};
-    }) as typeof Bun.serve);
-    startServer({ listen: "127.0.0.1:0", bots: {}, clients: {
+    handler = createHandler({ listen: "127.0.0.1:0", bots: {}, clients: {
       test: { token_sha256: createHash("sha256").update("client").digest("hex"), bots: [], chats: [] },
     } }, { log() {} });
     const contents = " ".repeat(256 * 1024 + 1);

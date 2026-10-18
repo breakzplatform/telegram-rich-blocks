@@ -10,6 +10,24 @@ getUpdates, setWebhook, or any other update-consumption method** and does not
 compete for polling. The official plugin remains responsible for inbound
 messages, pairing, ordinary replies and local file attachments.
 
+## Install
+
+```sh
+npm install -g telegram-rich-blocks   # or run it without installing:
+npx telegram-rich-blocks preview examples/sample.md
+bunx telegram-rich-blocks preview examples/sample.md
+```
+
+The package runs on Node.js 20+, Bun and Deno (`npm:telegram-rich-blocks`).
+It is also a library:
+
+```ts
+import { TelegramApi, markdown } from "telegram-rich-blocks";
+await new TelegramApi(process.env.TELEGRAM_BOT_TOKEN!).send("123456789", markdown("# Ready"));
+```
+
+`telegram-rich-blocks mcp` starts the MCP server on stdio for any MCP client.
+
 ## Claude Code plugin
 
 Requires Bun (tested with 1.3.13) and a configured official Telegram plugin.
@@ -55,10 +73,11 @@ the default and selects rich tools for structured answers.
 server with `TELEGRAM_RICH_HOST=hermes`. Merge
 [integrations/hermes/config.yaml](integrations/hermes/config.yaml) into
 `~/.hermes/config.yaml` (absolute paths: Hermes filters the environment of stdio
-servers), link the skill and restart the gateway:
+servers), copy the skill and restart the gateway:
 
 ```sh
-ln -s "$PWD/integrations/hermes" ~/.hermes/skills/mcp/telegram-rich-replies
+mkdir -p ~/.hermes/skills/mcp/telegram-rich-replies
+cp integrations/hermes/SKILL.md ~/.hermes/skills/mcp/telegram-rich-replies/
 hermes mcp test telegram-rich-blocks
 hermes gateway restart
 ```
@@ -87,17 +106,13 @@ messages.
 ## CLI
 
 ```sh
-bun install
-bun src/cli.ts preview examples/sample.md
-bun src/cli.ts send --chat 123456789 --dry-run examples/sample.md
-bun src/cli.ts send --chat 123456789 --silent --reply-to 42 --thread 7 report.md
-printf '# Ready\n\n- Worker online\n' | bun src/cli.ts send --chat 123456789 -
+telegram-rich-blocks preview examples/sample.md
+telegram-rich-blocks send --chat 123456789 --dry-run examples/sample.md
+telegram-rich-blocks send --chat 123456789 --silent --reply-to 42 --thread 7 report.md
+printf '# Ready\n\n- Worker online\n' | telegram-rich-blocks send --chat 123456789 -
 ```
 
-For a local command on PATH, `bun link` registers the package and its
-`telegram-rich-blocks` executable. It can then also be invoked with
-`bunx --no-install telegram-rich-blocks preview examples/sample.md` after linking.
-There is no published registry package required by these instructions.
+From a clone, `bun src/cli.ts` runs the same CLI without building.
 
 ```text
 telegram-rich-blocks send --chat ID [--token-env VAR | --token-file PATH]
@@ -106,6 +121,7 @@ telegram-rich-blocks edit --chat ID --message-id N [--token-env VAR | --token-fi
   [--json] [--no-allowlist] [FILE|-]
 telegram-rich-blocks preview [FILE|-]
 telegram-rich-blocks serve --config PATH
+telegram-rich-blocks mcp
 ```
 
 Omitted input means stdin; `--` permits filenames starting with a dash.

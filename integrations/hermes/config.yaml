@@ -1,10 +1,10 @@
 # Merge into ~/.hermes/config.yaml, then: hermes mcp test telegram-rich-blocks
-# and hermes gateway restart. Use absolute paths: Hermes passes a filtered
-# environment to stdio servers, so PATH may not include Bun.
+# and hermes gateway restart. Use an absolute path to npx: Hermes passes a
+# filtered environment to stdio servers, so PATH may not include it.
 mcp_servers:
   telegram-rich-blocks:
-    command: /absolute/path/to/bun
-    args: [run, --cwd, /absolute/path/to/telegram-rich-blocks, --silent, start]
+    command: /absolute/path/to/npx
+    args: [--yes, telegram-rich-blocks, mcp]
     env:
       TELEGRAM_RICH_HOST: hermes
     enabled: true

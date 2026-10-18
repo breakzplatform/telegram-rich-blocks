@@ -1,16 +1,50 @@
 {
   "name": "telegram-rich-blocks",
   "version": "0.2.0",
+  "description": "Telegram Bot API rich messages (tables, maps, buttons, details) from Markdown, for agents, scripts and n8n",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/breakzplatform/telegram-rich-blocks.git"
+  },
+  "homepage": "https://github.com/breakzplatform/telegram-rich-blocks#readme",
+  "keywords": [
+    "telegram",
+    "telegram-bot",
+    "rich-messages",
+    "mcp",
+    "claude-code",
+    "hermes-agent",
+    "n8n",
+    "markdown"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "examples",
+    "integrations",
+    "docs",
+    "CHANGELOG.md"
+  ],
   "bin": {
-    "telegram-rich-blocks": "./src/cli.ts"
+    "telegram-rich-blocks": "./lib/bin.js"
   },
   "scripts": {
     "start": "bun install --no-summary 1>&2 && bun src/mcp.ts",
     "test": "bun test",
     "check": "tsc --noEmit",
-    "build": "bun build --compile --target=bun-darwin-arm64 src/cli.ts --outfile dist/telegram-rich-blocks-darwin-arm64 && bun build --compile --target=bun-linux-x64 src/cli.ts --outfile dist/telegram-rich-blocks-linux-x64"
+    "build": "bun build --compile --target=bun-darwin-arm64 src/cli.ts --outfile dist/telegram-rich-blocks-darwin-arm64 && bun build --compile --target=bun-linux-x64 src/cli.ts --outfile dist/telegram-rich-blocks-linux-x64",
+    "build:node": "rm -rf lib && bun build src/bin.ts src/index.ts --target=node --format=esm --packages=external --outdir lib && tsc -p tsconfig.build.json",
+    "prepublishOnly": "bun run check && bun test && bun run build:node"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"

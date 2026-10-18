@@ -1,23 +1,19 @@
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { startServer } from "../src/server";
+import { createHandler } from "../src/server";
 afterEach(() => mock.restore());
 function setup(
   reply: () => Response = () =>
     Response.json({ ok: true, result: { message_id: 5 } }),
 ) {
   let handler: (request: Request) => Promise<Response>;
-  spyOn(Bun, "serve").mockImplementation(((options: any) => {
-    handler = (request) => options.fetch(request, { timeout() {} });
-    return {};
-  }) as typeof Bun.serve);
   const requests: { url: string; body: any }[] = [];
   spyOn(globalThis, "fetch").mockImplementation((async (url, init) => {
     requests.push({ url: String(url), body: JSON.parse(String(init?.body)) });
     return reply();
   }) as typeof fetch);
   const logs: string[] = [];
-  startServer(
+  handler = createHandler(
     {
       listen: "127.0.0.1:0",
       bots: {

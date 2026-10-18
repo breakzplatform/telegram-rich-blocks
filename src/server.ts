@@ -1,13 +1,8 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import {
-  ApiError,
-  TelegramApi,
-  chatId,
-  positiveInteger,
-  redact,
-} from "./api";
+import { ApiError, TelegramApi, chatId, positiveInteger, redact } from "./api";
 import { contentInput, preview } from "./plugin";
 import { InputError } from "./types";
+import { serve, type Handler, type RunningServer } from "./http";
 export const MAX_BODY_BYTES = 256 * 1024;
 export interface Configuration {
   listen: string;
@@ -131,13 +126,24 @@ async function readBody(
     throw new HttpError(400, "Invalid JSON body");
   }
 }
-export function startServer(
+interface ServerOptions {
+  environment?: Record<string, string | undefined>;
+  log?: (line: string) => void;
+}
+export async function startServer(
   configuration: Configuration,
-  options: {
-    environment?: Record<string, string | undefined>;
-    log?: (line: string) => void;
-  } = {},
-) {
+  options: ServerOptions = {},
+): Promise<RunningServer> {
+  const { hostname, port } = listenAddress(
+    validateConfig(configuration).listen,
+  );
+  return serve(hostname, port, createHandler(configuration, options));
+}
+/** The HTTP API as a Fetch handler, independent of the server that runs it. */
+export function createHandler(
+  configuration: Configuration,
+  options: ServerOptions = {},
+): Handler {
   const config = validateConfig(configuration);
   const environment = options.environment ?? process.env;
   const log =
@@ -156,114 +162,111 @@ export function startServer(
     ...client,
     digest: Buffer.from(client.token_sha256, "hex"),
   }));
-  return Bun.serve({
-    ...listenAddress(config.listen),
-    maxRequestBodySize: MAX_BODY_BYTES + 1024,
-    idleTimeout: 30,
-    async fetch(request, server) {
-      const path = new URL(request.url).pathname;
-      if (request.method === "GET" && path === "/health")
-        return Response.json({ ok: true });
-      let clientName: string | undefined,
-        botName: string | undefined,
-        chat: string | undefined,
-        size = 0,
-        status = 200;
-      let reason: string | undefined;
-      try {
-        if (request.method !== "POST" || !["/send", "/edit", "/preview"].includes(path))
-          throw new HttpError(404, "Not found");
-        const authorization = request.headers
-          .get("authorization")
-          ?.match(/^Bearer (\S+)$/);
-        const digest = createHash("sha256")
-          .update(authorization?.[1] ?? "")
-          .digest();
-        let client: (typeof clients)[number] | undefined;
-        for (const candidate of clients) {
-          const matches = timingSafeEqual(digest, candidate.digest);
-          if (matches && authorization) client = candidate;
-        }
-        if (!client) throw new HttpError(401, "Unauthorized");
-        clientName = client.name;
-        const body = object(
-          await readBody(request, (value) => {
-            size = value;
-          }),
-        );
-        if (path === "/preview")
-          return Response.json(preview(contentInput(body, "blocks")));
-        if (typeof body.bot !== "string" || !client.bots.includes(body.bot))
-          throw new HttpError(403, "Bot is not allowed");
-        botName = body.bot;
-        const identifier = chatId(body.chat_id);
-        if (!client.chats.includes(identifier))
-          throw new HttpError(403, "Chat is not allowed");
-        chat = identifier;
-        const messageId =
-          path === "/edit"
-            ? positiveInteger(body.message_id, "message_id")
-            : undefined;
-        const message = contentInput(body, "blocks");
-        server.timeout(request, 0);
-        const api = bots.get(botName)!;
-        const result =
-          messageId === undefined
-            ? await api.send(chat, message, {
-                silent: body.silent as boolean | undefined,
-                reply_to: body.reply_to as number | undefined,
-                thread_id: body.thread_id as number | undefined,
-              })
-            : await api.edit(chat, messageId, message);
-        return Response.json(result);
-      } catch (error) {
-        status =
-          error instanceof HttpError
-            ? error.status
-            : error instanceof InputError
-              ? 400
-              : error instanceof ApiError
-                ? error.status === 429
-                  ? 429
-                  : 502
-                : 500;
-        if (error instanceof ApiError)
-          reason = redact(
-            error,
-            botName ? environment[config.bots[botName].token_env] : undefined,
-          );
-        return Response.json(
-          {
-            ok: false,
-            error:
-              error instanceof HttpError || error instanceof InputError
-                ? error.message
-                : error instanceof ApiError
-                  ? reason
-                  : "Internal server error",
-            ...(error instanceof ApiError
-              ? { message_ids: error.message_ids }
-              : {}),
-          },
-          {
-            status,
-            ...(status === 429 && error instanceof ApiError
-              ? { headers: { "Retry-After": String(error.retry_after ?? 1) } }
-              : {}),
-          },
-        );
-      } finally {
-        log(
-          JSON.stringify({
-            bot: botName ?? null,
-            chat: chat ?? null,
-            client: clientName ?? null,
-            size,
-            status,
-            ...(reason !== undefined ? { error: reason } : {}),
-          }),
-        );
+  return async (request) => {
+    const path = new URL(request.url).pathname;
+    if (request.method === "GET" && path === "/health")
+      return Response.json({ ok: true });
+    let clientName: string | undefined,
+      botName: string | undefined,
+      chat: string | undefined,
+      size = 0,
+      status = 200;
+    let reason: string | undefined;
+    try {
+      if (
+        request.method !== "POST" ||
+        !["/send", "/edit", "/preview"].includes(path)
+      )
+        throw new HttpError(404, "Not found");
+      const authorization = request.headers
+        .get("authorization")
+        ?.match(/^Bearer (\S+)$/);
+      const digest = createHash("sha256")
+        .update(authorization?.[1] ?? "")
+        .digest();
+      let client: (typeof clients)[number] | undefined;
+      for (const candidate of clients) {
+        const matches = timingSafeEqual(digest, candidate.digest);
+        if (matches && authorization) client = candidate;
       }
-    },
-  });
+      if (!client) throw new HttpError(401, "Unauthorized");
+      clientName = client.name;
+      const body = object(
+        await readBody(request, (value) => {
+          size = value;
+        }),
+      );
+      if (path === "/preview")
+        return Response.json(preview(contentInput(body, "blocks")));
+      if (typeof body.bot !== "string" || !client.bots.includes(body.bot))
+        throw new HttpError(403, "Bot is not allowed");
+      botName = body.bot;
+      const identifier = chatId(body.chat_id);
+      if (!client.chats.includes(identifier))
+        throw new HttpError(403, "Chat is not allowed");
+      chat = identifier;
+      const messageId =
+        path === "/edit"
+          ? positiveInteger(body.message_id, "message_id")
+          : undefined;
+      const message = contentInput(body, "blocks");
+      const api = bots.get(botName)!;
+      const result =
+        messageId === undefined
+          ? await api.send(chat, message, {
+              silent: body.silent as boolean | undefined,
+              reply_to: body.reply_to as number | undefined,
+              thread_id: body.thread_id as number | undefined,
+            })
+          : await api.edit(chat, messageId, message);
+      return Response.json(result);
+    } catch (error) {
+      status =
+        error instanceof HttpError
+          ? error.status
+          : error instanceof InputError
+            ? 400
+            : error instanceof ApiError
+              ? error.status === 429
+                ? 429
+                : 502
+              : 500;
+      if (error instanceof ApiError)
+        reason = redact(
+          error,
+          botName ? environment[config.bots[botName].token_env] : undefined,
+        );
+      return Response.json(
+        {
+          ok: false,
+          error:
+            error instanceof HttpError || error instanceof InputError
+              ? error.message
+              : error instanceof ApiError
+                ? reason
+                : "Internal server error",
+          ...(error instanceof ApiError
+            ? { message_ids: error.message_ids }
+            : {}),
+        },
+        {
+          status,
+          ...(status === 429 && error instanceof ApiError
+            ? { headers: { "Retry-After": String(error.retry_after ?? 1) } }
+            : {}),
+        },
+      );
+    } finally {
+      log(
+        JSON.stringify({
+          bot: botName ?? null,
+          chat: chat ?? null,
+          client: clientName ?? null,
+          size,
+          status,
+          ...(reason !== undefined ? { error: reason } : {}),
+        }),
+      );
+    }
+  };
 }
