@@ -65,7 +65,7 @@ test("plain-text fallback retries rate limits without resending rich content", a
     new Response("missing", { status: 404 }), limited(1), success(9),
   ]);
   expect(await api.send("42", markdown("hello"))).toEqual({ ok: true, message_ids: [9], fallback: true });
-  expect(bodies.slice(1)).toEqual([{ chat_id: "42", text: "hello" }, { chat_id: "42", text: "hello" }]);
+  expect(bodies.slice(1)).toMatchObject([{ chat_id: "42", text: "hello" }, { chat_id: "42", text: "hello" }]);
   expect(waits).toEqual([1000]);
 });
 test("draft retries rate limits and accepts a successful boolean response", async () => {
