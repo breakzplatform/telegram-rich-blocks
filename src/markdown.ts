@@ -324,6 +324,8 @@ export function parseInput(input: unknown): RichMessage {
         if (parsed && "blocks" in parsed) return parseInput(parsed);
       } catch (error) {
         if (error instanceof InputError) throw error;
+        if (/"blocks"\s*:/.test(input))
+          throw new InputError("Invalid JSON input with blocks");
       }
     }
     return markdown(input);

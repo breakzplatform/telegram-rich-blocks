@@ -42,7 +42,9 @@ function render(block: Block): string {
         latitude: number;
         longitude: number;
       };
-      content = `Map: ${location.latitude}, ${location.longitude}`;
+      content = location
+        ? `Map: ${location.latitude}, ${location.longitude}`
+        : "Map";
       break;
     }
     default: {
