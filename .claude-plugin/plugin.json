@@ -1,5 +1,5 @@
 {
   "name": "telegram-rich-blocks",
   "description": "Structured rich Telegram replies alongside the official Telegram channel, plus CLI and HTTP senders.",
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

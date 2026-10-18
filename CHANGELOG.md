@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## 0.2.0 — 2026-10-18
 
 ### Added
 
@@ -19,6 +19,7 @@
 
 ### Changed
 
+- Renamed the shell example to `examples/notify.sh`.
 - Renamed the project, package, plugin and CLI from telegram-rich to telegram-rich-blocks.
 - CLI sends now check the plugin's `access.json` allowlist by default; use
   `--no-allowlist` to explicitly bypass it. Preview and dry-run remain offline.

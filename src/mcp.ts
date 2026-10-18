@@ -7,7 +7,7 @@ import {
 import { callTool, toolsFor, configuredToken } from "./plugin";
 import { redact } from "./api";
 const server = new Server(
-  { name: "telegram-rich-blocks", version: "0.1.0" },
+  { name: "telegram-rich-blocks", version: "0.2.0" },
   { capabilities: { tools: {} } },
 );
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
