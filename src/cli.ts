@@ -10,12 +10,12 @@ import {
 } from "./api";
 import { parseInput } from "./markdown";
 import { splitMessage } from "./limits";
-import { preview } from "./plugin";
+import { preview, assertAllowedChat, stateDirectory, expandHome } from "./plugin";
 import { startServer, validateConfig } from "./server";
 import { InputError } from "./types";
 const usage = `telegram-rich preview [FILE|-]
 telegram-rich send --chat ID [--token-env VAR | --token-file PATH]
-  [--silent] [--reply-to N] [--thread N] [--json] [--dry-run] [FILE|-]
+  [--silent] [--reply-to N] [--thread N] [--json] [--dry-run] [--no-allowlist] [FILE|-]
 telegram-rich serve --config PATH`;
 async function read(path: string): Promise<string> {
   try {
@@ -47,6 +47,7 @@ export async function main(arguments_: string[]): Promise<number> {
             "thread",
             "json",
             "dry-run",
+            "no-allowlist",
           ]
         : command === "serve"
           ? ["config"]
@@ -61,7 +62,8 @@ export async function main(arguments_: string[]): Promise<number> {
         const name = argument.slice(2);
         if (!allowed.includes(name) || flags.has(name))
           throw new InputError("Unknown or duplicate option");
-        if (["silent", "json", "dry-run"].includes(name)) flags.set(name, true);
+        if (["silent", "json", "dry-run", "no-allowlist"].includes(name))
+          flags.set(name, true);
         else {
           const value = args[++index];
           if (!value || value.startsWith("--"))
@@ -136,8 +138,10 @@ export async function main(arguments_: string[]): Promise<number> {
       );
       return 0;
     }
+    if (!flags.has("no-allowlist"))
+      await assertAllowedChat(chat, stateDirectory());
     token = flags.has("token-file")
-      ? (await read(String(flags.get("token-file")))).trim()
+      ? (await read(expandHome(String(flags.get("token-file"))))).trim()
       : process.env[String(flags.get("token-env") ?? "TELEGRAM_BOT_TOKEN")];
     if (!token) throw new InputError("Bot token is not configured");
     console.log(

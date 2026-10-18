@@ -98,7 +98,7 @@ test("API failure exits 1 and success prints IDs", async () => {
     TELEGRAM_API_BASE: server.url.origin,
     EXAMPLE_TOKEN: "123:FAKE",
   };
-  const args = ["send", "--chat", "42", "--token-env", "EXAMPLE_TOKEN"];
+  const args = ["send", "--chat", "42", "--token-env", "EXAMPLE_TOKEN", "--no-allowlist"];
   expect((await cli(args, "hello", environment)).code).toBe(1);
   success = true;
   const result = await cli(args, "hello", environment);

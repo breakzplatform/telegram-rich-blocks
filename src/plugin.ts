@@ -6,14 +6,18 @@ import { parseInput } from "./markdown";
 import { singleMessage, splitMessage } from "./limits";
 import { InputError } from "./types";
 type Environment = Record<string, string | undefined>;
+export function expandHome(path: string): string {
+  if (path === "~") return homedir();
+  return path.startsWith("~/") ? join(homedir(), path.slice(2)) : path;
+}
 export function stateDirectory(environment: Environment = process.env): string {
-  return (
+  return expandHome(
     environment.TELEGRAM_STATE_DIR ??
-    join(
-      environment.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude"),
-      "channels",
-      "telegram",
-    )
+      join(
+        expandHome(environment.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude")),
+        "channels",
+        "telegram",
+      ),
   );
 }
 export async function loadToken(
