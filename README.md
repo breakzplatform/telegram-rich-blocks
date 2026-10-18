@@ -365,4 +365,8 @@ bun src/cli.ts preview examples/sample.md
 
 Tests use fixture state directories and fake Telegram servers on loopback; they
 never read real Claude state or call the real Telegram API. Compile targets are
-macOS ARM64 and Linux x64. Apache-2.0 licensed, copyright 2026 Joselito.
+macOS ARM64 and Linux x64.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

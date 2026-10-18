@@ -33,7 +33,8 @@
     "examples",
     "integrations",
     "docs",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "NOTICE"
   ],
   "bin": {
     "telegram-rich-blocks": "./lib/bin.js"
