@@ -295,7 +295,6 @@ sender rejects draft media, including reusable file IDs (a deliberate narrower
 scope than the API). `can_stop` requests Telegram's stop button but this project
 does not consume its update; another integration must handle it.
 
-The plugin's allowlist does not apply to the CLI or HTTP service. HTTP clients
 have independent bot/chat scopes and cannot provide arbitrary bot credentials.
 Rich URLs are fetched by Telegram, never by this server; links still need normal
 operator judgment. No multipart uploads, callback handlers, ephemeral-group
