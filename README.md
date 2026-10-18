@@ -72,7 +72,8 @@ telegram-rich serve --config PATH
 ```
 
 Omitted input means stdin; `--` permits filenames starting with a dash.
-The default token is `TELEGRAM_BOT_TOKEN`. `--token-env` chooses another variable;
+The default token is `TELEGRAM_BOT_TOKEN`, then the official channel's `.env` in the
+state folder, like the plugin. `--token-env` chooses another variable;
 `--token-file` reads a file that contains only the token. The CLI checks `access.json`
 on every send, with the same allowlist as the plugin: `allowFrom` for private chats
 and `groups` for groups. A missing or invalid file blocks the send.

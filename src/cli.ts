@@ -10,7 +10,7 @@ import {
 } from "./api";
 import { parseInput } from "./markdown";
 import { splitMessage } from "./limits";
-import { preview, assertAllowedChat, stateDirectory, expandHome } from "./plugin";
+import { preview, assertAllowedChat, stateDirectory, expandHome, loadToken } from "./plugin";
 import { startServer, validateConfig } from "./server";
 import { InputError } from "./types";
 const usage = `telegram-rich preview [FILE|-]
@@ -140,9 +140,13 @@ export async function main(arguments_: string[]): Promise<number> {
     }
     if (!flags.has("no-allowlist"))
       await assertAllowedChat(chat, stateDirectory());
+    // Same lookup as the plugin: an explicit file or variable wins, otherwise
+    // the official channel's .env in the state folder.
     token = flags.has("token-file")
       ? (await read(expandHome(String(flags.get("token-file"))))).trim()
-      : process.env[String(flags.get("token-env") ?? "TELEGRAM_BOT_TOKEN")];
+      : flags.has("token-env")
+        ? process.env[String(flags.get("token-env"))]
+        : await loadToken(stateDirectory());
     if (!token) throw new InputError("Bot token is not configured");
     console.log(
       JSON.stringify(await new TelegramApi(token).send(chat, message, options)),
