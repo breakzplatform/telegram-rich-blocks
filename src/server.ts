@@ -1,5 +1,11 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { ApiError, TelegramApi, chatId, redact } from "./api";
+import {
+  ApiError,
+  TelegramApi,
+  chatId,
+  positiveInteger,
+  redact,
+} from "./api";
 import { contentInput, preview } from "./plugin";
 import { InputError } from "./types";
 export const MAX_BODY_BYTES = 256 * 1024;
@@ -165,7 +171,7 @@ export function startServer(
         status = 200;
       let reason: string | undefined;
       try {
-        if (request.method !== "POST" || !["/send", "/preview"].includes(path))
+        if (request.method !== "POST" || !["/send", "/edit", "/preview"].includes(path))
           throw new HttpError(404, "Not found");
         const authorization = request.headers
           .get("authorization")
@@ -194,15 +200,21 @@ export function startServer(
         if (!client.chats.includes(identifier))
           throw new HttpError(403, "Chat is not allowed");
         chat = identifier;
+        const messageId =
+          path === "/edit"
+            ? positiveInteger(body.message_id, "message_id")
+            : undefined;
         const message = contentInput(body, "blocks");
         server.timeout(request, 0);
-        const result = await bots
-          .get(botName)!
-          .send(chat, message, {
-            silent: body.silent as boolean | undefined,
-            reply_to: body.reply_to as number | undefined,
-            thread_id: body.thread_id as number | undefined,
-          });
+        const api = bots.get(botName)!;
+        const result =
+          messageId === undefined
+            ? await api.send(chat, message, {
+                silent: body.silent as boolean | undefined,
+                reply_to: body.reply_to as number | undefined,
+                thread_id: body.thread_id as number | undefined,
+              })
+            : await api.edit(chat, messageId, message);
         return Response.json(result);
       } catch (error) {
         status =

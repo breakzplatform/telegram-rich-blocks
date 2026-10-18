@@ -183,12 +183,28 @@ exclusive. Successful response: `{"ok":true,"message_ids":[123]}`; fallback adds
 `"fallback":true`. Disable automatic retries for sends unless your workflow
 handles duplicates: Telegram sends are not idempotent.
 
+`POST /edit` edits a message the bot sent earlier, with the same authentication
+and per-client bot/chat permissions as `/send`. Body: `bot`, `chat_id`,
+`message_id`, and exactly one of `markdown` / `blocks`; the content must fit one
+message. The response matches `/send`. "Message is not modified" counts as
+success, so edits are safe to retry.
+
+```javascript
+{{ {
+  bot: 'notifier',
+  chat_id: '123456789',
+  message_id: $json.message_ids[0],
+  markdown: '# Job finished\n\n' + $json.summary
+} }}
+```
+
 `POST /preview` accepts `{"markdown":"..."}` or `{"blocks":[...]}` and requires
 client authentication but no bot/chat selection. It returns the same JSON as CLI
 preview. `GET /health` returns `{"ok":true}` without authentication or config.
 Errors: 400 input, 401 authentication, 403 bot/chat authorization, 413 body too
-large, 415 content type, 502 Telegram error. Telegram errors include IDs already
-sent; upstream descriptions are withheld from HTTP responses.
+large, 415 content type, 429 Telegram rate limit (with `Retry-After`), 502 other
+Telegram errors. Telegram errors include IDs already sent and the upstream
+description with tokens redacted.
 
 Bodies are limited to 256 KiB, including streamed bodies without Content-Length.
 Authentication compares SHA-256 digests in constant time. Logs are one-line JSON

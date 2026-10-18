@@ -10,6 +10,8 @@
   styles. The plain-text fallback keeps only the label of a callback button.
 - CLI `edit` command (`--chat`, `--message-id`) that edits a sent message with the
   same token and allowlist rules as `send`.
+- HTTP `POST /edit` endpoint with the same authentication, bot/chat permissions
+  and error handling as `/send`.
 
 ### Changed
 
