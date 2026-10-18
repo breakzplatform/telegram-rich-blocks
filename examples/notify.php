@@ -1,6 +1,6 @@
 <?php
 $process = proc_open(
-    ['telegram-rich', 'send', '--chat', getenv('TELEGRAM_CHAT_ID'), '-'],
+    ['telegram-rich-blocks', 'send', '--chat', getenv('TELEGRAM_CHAT_ID'), '-'],
     [0 => ['pipe', 'r'], 1 => STDOUT, 2 => STDERR],
     $pipes
 );

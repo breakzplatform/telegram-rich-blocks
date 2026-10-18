@@ -61,7 +61,7 @@ export async function assertAllowedChat(
 }
 const markdownProperty = {
   type: "string",
-  description: "Markdown in the telegram-rich dialect",
+  description: "Markdown in the telegram-rich-blocks dialect",
 };
 const contentProperties = {
   markdown: markdownProperty,

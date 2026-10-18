@@ -1,6 +1,6 @@
 ---
 name: rich-replies
-description: Send structured Telegram answers with tables, lists, headings, status reports or collapsible details using telegram-rich alongside the official Telegram channel.
+description: Send structured Telegram answers with tables, lists, headings, status reports or collapsible details using telegram-rich-blocks alongside the official Telegram channel.
 ---
 
 Keep the official Telegram plugin's `reply` as the default channel tool. Use it

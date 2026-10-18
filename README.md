@@ -1,4 +1,4 @@
-# telegram-rich
+# telegram-rich-blocks
 
 Structured Telegram messages for Claude Code agents, shell/Python/PHP scripts,
 and n8n workflows. Targets **Telegram Bot API 10.3** with headings, tables,
@@ -13,11 +13,11 @@ messages, pairing, ordinary replies and local file attachments.
 ## Claude Code plugin
 
 Requires Bun (tested with 1.3.13) and a configured official Telegram plugin.
-This repository is a marketplace and its root is the `telegram-rich` plugin:
+This repository is a marketplace and its root is the `telegram-rich-blocks` plugin:
 
 ```text
-/plugin marketplace add /absolute/path/to/telegram-rich
-/plugin install telegram-rich@telegram-rich-marketplace
+/plugin marketplace add /absolute/path/to/telegram-rich-blocks
+/plugin install telegram-rich-blocks@telegram-rich-blocks-marketplace
 ```
 
 Replace the local path with a repository URL once you host it. The MCP server
@@ -60,15 +60,15 @@ printf '# Ready\n\n- Worker online\n' | bun src/cli.ts send --chat 123456789 -
 ```
 
 For a local command on PATH, `bun link` registers the package and its
-`telegram-rich` executable. It can then also be invoked with
-`bunx --no-install telegram-rich preview examples/sample.md` after linking.
+`telegram-rich-blocks` executable. It can then also be invoked with
+`bunx --no-install telegram-rich-blocks preview examples/sample.md` after linking.
 There is no published registry package required by these instructions.
 
 ```text
-telegram-rich send --chat ID [--token-env VAR | --token-file PATH]
+telegram-rich-blocks send --chat ID [--token-env VAR | --token-file PATH]
   [--silent] [--reply-to N] [--thread N] [--json] [--dry-run] [--no-allowlist] [FILE|-]
-telegram-rich preview [FILE|-]
-telegram-rich serve --config PATH
+telegram-rich-blocks preview [FILE|-]
+telegram-rich-blocks serve --config PATH
 ```
 
 Omitted input means stdin; `--` permits filenames starting with a dash.
@@ -81,7 +81,7 @@ and `groups` for groups. A missing or invalid file blocks the send.
 above. To send without that check, say so explicitly with `--no-allowlist`:
 
 ```sh
-telegram-rich send --chat 123456789 --no-allowlist report.md
+telegram-rich-blocks send --chat 123456789 --no-allowlist report.md
 ```
 
 `TELEGRAM_STATE_DIR`, `CLAUDE_CONFIG_DIR` and `--token-file` expand `~` and `~/`
@@ -106,8 +106,8 @@ Compile standalone binaries (no Bun needed at runtime):
 
 ```sh
 bun run build
-./dist/telegram-rich-darwin-arm64 preview examples/sample.md
-# Linux host: ./dist/telegram-rich-linux-x64 ...
+./dist/telegram-rich-blocks-darwin-arm64 preview examples/sample.md
+# Linux host: ./dist/telegram-rich-blocks-linux-x64 ...
 ```
 
 `TELEGRAM_API_BASE` overrides `https://api.telegram.org`, primarily for local
@@ -130,7 +130,7 @@ n8n's Header Auth credential. Set `NOTIFIER_BOT_TOKEN` in the service environmen
 The checked-in configuration is intentionally unusable until customized.
 
 ```sh
-telegram-rich serve --config examples/server.json
+telegram-rich-blocks serve --config examples/server.json
 ```
 
 The default listen address is **127.0.0.1:8787**. For remote access over Tailscale,

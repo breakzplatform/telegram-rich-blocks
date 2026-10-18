@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "telegram-rich": {
+    "telegram-rich-blocks": {
       "command": "bun",
       "args": [
         "run",

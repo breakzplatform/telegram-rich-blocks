@@ -1,5 +1,5 @@
 services:
-  telegram-rich:
+  telegram-rich-blocks:
     build: ..
     command: ["serve", "--config", "/config/server.json"]
     network_mode: host

@@ -13,10 +13,10 @@ import { splitMessage } from "./limits";
 import { preview, assertAllowedChat, stateDirectory, expandHome, loadToken } from "./plugin";
 import { startServer, validateConfig } from "./server";
 import { InputError } from "./types";
-const usage = `telegram-rich preview [FILE|-]
-telegram-rich send --chat ID [--token-env VAR | --token-file PATH]
+const usage = `telegram-rich-blocks preview [FILE|-]
+telegram-rich-blocks send --chat ID [--token-env VAR | --token-file PATH]
   [--silent] [--reply-to N] [--thread N] [--json] [--dry-run] [--no-allowlist] [FILE|-]
-telegram-rich serve --config PATH`;
+telegram-rich-blocks serve --config PATH`;
 async function read(path: string): Promise<string> {
   try {
     return path === "-" ? await Bun.stdin.text() : await readFile(path, "utf8");
