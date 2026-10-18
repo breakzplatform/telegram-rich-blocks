@@ -49,6 +49,39 @@ outbound allowlist model, not its inbound mention/pairing policy.
 The [rich-replies skill](skills/rich-replies/SKILL.md) keeps official `reply` as
 the default and selects rich tools for structured answers.
 
+## Hermes Agent
+
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) loads the same MCP
+server with `TELEGRAM_RICH_HOST=hermes`. Merge
+[integrations/hermes/config.yaml](integrations/hermes/config.yaml) into
+`~/.hermes/config.yaml` (absolute paths: Hermes filters the environment of stdio
+servers), link the skill and restart the gateway:
+
+```sh
+ln -s "$PWD/integrations/hermes" ~/.hermes/skills/mcp/telegram-rich-replies
+hermes mcp test telegram-rich-blocks
+hermes gateway restart
+```
+
+The tools appear as `mcp__telegram_rich_blocks__rich_reply` and so on. In this
+mode the bot token, allowlist and default chat come from Hermes' own settings,
+read from `$HERMES_HOME/.env` (default `~/.hermes/.env`) on every call, with
+environment variables taking precedence:
+
+| Setting | Use |
+| --- | --- |
+| `TELEGRAM_BOT_TOKEN` | Bot token |
+| `TELEGRAM_ALLOWED_USERS` | Comma-separated user IDs; only these private chats are allowed |
+| `TELEGRAM_HOME_CHANNEL` | Chat used when a tool call omits `chat_id` (Hermes may not show the agent a numeric chat ID) |
+
+Groups are refused in this mode, because Hermes allowlists group senders, not
+group destinations. The CLI honours `TELEGRAM_RICH_HOST=hermes` too.
+
+Hermes can already render tables, task lists, `<details>` and math natively in
+ordinary replies (`platforms.telegram.extra.rich_messages: true`). The
+[skill](integrations/hermes/SKILL.md) keeps those in ordinary replies and uses
+`rich_reply` for maps, buttons, URL media, footers and edits.
+
 ## CLI
 
 ```sh

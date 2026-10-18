@@ -4,14 +4,14 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { callTool, toolDefinitions, loadToken, stateDirectory } from "./plugin";
+import { callTool, toolsFor, configuredToken } from "./plugin";
 import { redact } from "./api";
 const server = new Server(
   { name: "telegram-rich-blocks", version: "0.1.0" },
   { capabilities: { tools: {} } },
 );
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: toolDefinitions,
+  tools: toolsFor(),
 }));
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
@@ -21,12 +21,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     );
     return { content: [{ type: "text", text: JSON.stringify(result) }] };
   } catch (error) {
-    let token = process.env.TELEGRAM_BOT_TOKEN;
-    if (token === undefined) {
-      try {
-        token = await loadToken(stateDirectory());
-      } catch {}
-    }
+    const token = process.env.TELEGRAM_BOT_TOKEN ?? (await configuredToken());
     return {
       isError: true,
       content: [{ type: "text", text: redact(error, token) }],

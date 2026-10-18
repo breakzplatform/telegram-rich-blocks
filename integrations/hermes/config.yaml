@@ -1,0 +1,18 @@
+# Merge into ~/.hermes/config.yaml, then: hermes mcp test telegram-rich-blocks
+# and hermes gateway restart. Use absolute paths: Hermes passes a filtered
+# environment to stdio servers, so PATH may not include Bun.
+mcp_servers:
+  telegram-rich-blocks:
+    command: /absolute/path/to/bun
+    args: [run, --cwd, /absolute/path/to/telegram-rich-blocks, --silent, start]
+    env:
+      TELEGRAM_RICH_HOST: hermes
+    enabled: true
+
+# Optional, independent of this project: Hermes' own rich rendering of tables,
+# task lists, <details> and math in ordinary replies.
+platforms:
+  telegram:
+    extra:
+      rich_messages: true
+      rich_drafts: false

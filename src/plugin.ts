@@ -5,6 +5,7 @@ import { TelegramApi, chatId, positiveInteger } from "./api";
 import { parseInput } from "./markdown";
 import { singleMessage, splitMessage } from "./limits";
 import { InputError } from "./types";
+import { assertHermesAllows, hermesHomeChannel, hermesToken } from "./hermes";
 type Environment = Record<string, string | undefined>;
 export function expandHome(path: string): string {
   if (path === "~") return homedir();
@@ -137,6 +138,25 @@ export const toolDefinitions = [
     },
   },
 ];
+/**
+ * The tools as the host sees them: under Hermes, chat_id may be omitted and
+ * defaults to TELEGRAM_HOME_CHANNEL.
+ */
+export function toolsFor(environment: Environment = process.env) {
+  if (host(environment) !== "hermes") return toolDefinitions;
+  return toolDefinitions.map((tool) => {
+    const required = tool.inputSchema.required.filter((field) => field !== "chat_id");
+    if (required.length === tool.inputSchema.required.length) return tool;
+    const properties = {
+      ...tool.inputSchema.properties,
+      chat_id: {
+        ...chatProperty,
+        description: "Numeric Telegram chat ID; defaults to Hermes' TELEGRAM_HOME_CHANNEL",
+      },
+    };
+    return { ...tool, inputSchema: { ...tool.inputSchema, properties, required } };
+  });
+}
 export function contentInput(
   args: Record<string, unknown>,
   rawKey = "blocks_json",
@@ -161,6 +181,39 @@ export function preview(input: unknown) {
   const parts = splitMessage(parseInput(input));
   return parts.length === 1 ? parts[0] : parts;
 }
+/** Which agent's Telegram setup supplies the token and the allowlist. */
+export function host(environment: Environment = process.env): "claude" | "hermes" {
+  const name = environment.TELEGRAM_RICH_HOST ?? "claude";
+  if (name !== "claude" && name !== "hermes")
+    throw new InputError(`TELEGRAM_RICH_HOST must be claude or hermes, not ${name}`);
+  return name;
+}
+/** Refuses chats outside the host's allowlist, re-read on every call. */
+export async function assertHostAllows(
+  chat: unknown,
+  environment: Environment = process.env,
+  directory = stateDirectory(environment),
+): Promise<void> {
+  if (host(environment) === "hermes") return assertHermesAllows(chat, environment);
+  return assertAllowedChat(chat, directory);
+}
+export async function hostToken(
+  environment: Environment = process.env,
+  directory = stateDirectory(environment),
+): Promise<string> {
+  if (host(environment) === "hermes") return hermesToken(environment);
+  return loadToken(directory, environment);
+}
+/** Best-effort token lookup for redacting errors; never throws. */
+export async function configuredToken(
+  environment: Environment = process.env,
+): Promise<string | undefined> {
+  try {
+    return await hostToken(environment);
+  } catch {
+    return undefined;
+  }
+}
 export async function callTool(
   name: string,
   args: Record<string, unknown>,
@@ -175,12 +228,12 @@ export async function callTool(
     throw new InputError("Unknown tool");
   const environment = options.environment ?? process.env;
   const directory = options.directory ?? stateDirectory(environment);
-  await assertAllowedChat(args.chat_id, directory);
+  if (args.chat_id === undefined && host(environment) === "hermes")
+    args = { ...args, chat_id: await hermesHomeChannel(environment) };
+  await assertHostAllows(args.chat_id, environment, directory);
+  const token = await hostToken(environment, directory);
   const message = contentInput(args);
-  const api = new TelegramApi(
-    await loadToken(directory, environment),
-    environment.TELEGRAM_API_BASE,
-  );
+  const api = new TelegramApi(token, environment.TELEGRAM_API_BASE);
   if (name === "rich_reply")
     return api.send(args.chat_id, message, {
       silent: args.silent as boolean | undefined,

@@ -4,6 +4,10 @@
 
 ### Added
 
+- Hermes Agent host (`TELEGRAM_RICH_HOST=hermes`): the MCP server and CLI take
+  the bot token, `TELEGRAM_ALLOWED_USERS` allowlist and `TELEGRAM_HOME_CHANNEL`
+  default chat from `$HERMES_HOME/.env`, re-read on every call. Ships a Hermes
+  skill and config snippet in `integrations/hermes`.
 - Callback buttons in the Markdown `buttons` fence (`Label | callback:data`) and
   an optional style suffix (`danger`, `success`, `primary`, callback-only `link`)
   for callback and URL buttons. Raw blocks validate `callback_data` length and

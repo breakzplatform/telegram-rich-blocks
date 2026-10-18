@@ -10,7 +10,7 @@ import {
 } from "./api";
 import { parseInput } from "./markdown";
 import { singleMessage, splitMessage } from "./limits";
-import { preview, assertAllowedChat, stateDirectory, expandHome, loadToken } from "./plugin";
+import { preview, assertHostAllows, hostToken, expandHome } from "./plugin";
 import { startServer, validateConfig } from "./server";
 import { InputError } from "./types";
 const usage = `telegram-rich-blocks preview [FILE|-]
@@ -157,15 +157,14 @@ export async function main(arguments_: string[]): Promise<number> {
       );
       return 0;
     }
-    if (!flags.has("no-allowlist"))
-      await assertAllowedChat(chat, stateDirectory());
+    if (!flags.has("no-allowlist")) await assertHostAllows(chat);
     // Same lookup as the plugin: an explicit file or variable wins, otherwise
-    // the official channel's .env in the state folder.
+    // the host's own token (the official channel's .env, or Hermes' .env).
     token = flags.has("token-file")
       ? (await read(expandHome(String(flags.get("token-file"))))).trim()
       : flags.has("token-env")
         ? process.env[String(flags.get("token-env"))]
-        : await loadToken(stateDirectory());
+        : await hostToken();
     if (!token) throw new InputError("Bot token is not configured");
     const api = new TelegramApi(token);
     console.log(
