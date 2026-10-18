@@ -25,7 +25,6 @@
 - The HTTP service runs on `node:http` instead of `Bun.serve`; the API is
   also exported as a Fetch handler (`createHandler`). `startServer` is now
   asynchronous.
-- Renamed the shell example to `examples/notify.sh`.
 - Renamed the project, package, plugin and CLI from telegram-rich to telegram-rich-blocks.
 - CLI sends now check the plugin's `access.json` allowlist by default; use
   `--no-allowlist` to explicitly bypass it. Preview and dry-run remain offline.
