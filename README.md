@@ -16,11 +16,11 @@ Requires Bun (tested with 1.3.13) and a configured official Telegram plugin.
 This repository is a marketplace and its root is the `telegram-rich-blocks` plugin:
 
 ```text
-/plugin marketplace add /absolute/path/to/telegram-rich-blocks
+/plugin marketplace add breakzplatform/telegram-rich-blocks
 /plugin install telegram-rich-blocks@telegram-rich-blocks-marketplace
 ```
 
-Replace the local path with a repository URL once you host it. The MCP server
+A local clone works too: pass its absolute path to `marketplace add`. The MCP server
 runs `bun install` on start, just like the official plugin; first startup needs
 package registry access. Reload plugins after installing.
 
