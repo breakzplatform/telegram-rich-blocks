@@ -21,6 +21,8 @@ export class ApiError extends Error {
     message: string,
     readonly unsupported = false,
     readonly message_ids: number[] = [],
+    readonly status?: number,
+    readonly retry_after?: number,
   ) {
     super(message);
   }
@@ -79,42 +81,71 @@ export class TelegramApi {
     method: string,
     body: Record<string, unknown>,
   ): Promise<unknown> {
-    try {
-      const response = await fetch(
-        `${this.base.replace(/\/$/, "")}/bot${this.token}/${method}`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(30000),
-          redirect: "error",
-        },
-      );
-      let data: {
-        ok?: boolean;
-        result?: unknown;
-        description?: string;
-        error_code?: number;
-      } = {};
+    let totalWait = 0;
+    for (let retries = 0; ; retries++) {
       try {
-        data = (await response.json()) as typeof data;
-      } catch {}
-      if (!response.ok || data.ok !== true) {
-        const description = redact(
-          data.description ?? `HTTP ${response.status}`,
-          this.token,
+        const response = await fetch(
+          `${this.base.replace(/\/$/, "")}/bot${this.token}/${method}`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(30000),
+            redirect: "error",
+          },
         );
-        throw new ApiError(
-          description,
-          response.status === 404 ||
-            data.error_code === 404 ||
-            /method\s+not\s+found|unsupported/i.test(description),
-        );
+        let data: {
+          ok?: boolean;
+          result?: unknown;
+          description?: string;
+          error_code?: number;
+          parameters?: { retry_after?: unknown };
+        } = {};
+        try {
+          data = (await response.json()) as typeof data;
+        } catch {}
+        if (!response.ok || data.ok !== true) {
+          const description = redact(
+            data.description ?? `HTTP ${response.status}`,
+            this.token,
+          );
+          const status = response.ok ? data.error_code : response.status;
+          if (
+            status === 400 &&
+            method === "editMessageText" &&
+            /message is not modified/i.test(description)
+          )
+            return { message_id: body.message_id };
+          const delay = data.parameters?.retry_after;
+          const retryAfter =
+            typeof delay === "number" && Number.isFinite(delay) && delay >= 0
+              ? Math.ceil(delay)
+              : undefined;
+          if (
+            status === 429 &&
+            retryAfter !== undefined &&
+            retries < 3 &&
+            totalWait + retryAfter <= 60
+          ) {
+            totalWait += retryAfter;
+            await Bun.sleep(retryAfter * 1000);
+            continue;
+          }
+          throw new ApiError(
+            description,
+            response.status === 404 ||
+              data.error_code === 404 ||
+              /method\s+not\s+found|unsupported/i.test(description),
+            [],
+            status,
+            status === 429 ? retryAfter ?? 1 : undefined,
+          );
+        }
+        return data.result;
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        throw new ApiError(redact(error, this.token));
       }
-      return data.result;
-    } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError(redact(error, this.token));
     }
   }
   private identifier(result: unknown): number {
@@ -184,6 +215,8 @@ export class TelegramApi {
         `${redact(error, this.token)}; completed message IDs: ${JSON.stringify(ids)}`,
         false,
         ids,
+        error instanceof ApiError ? error.status : undefined,
+        error instanceof ApiError ? error.retry_after : undefined,
       );
     }
     return {
