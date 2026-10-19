@@ -35,7 +35,7 @@ This repository is a marketplace and its root is the `telegram-rich-blocks` plug
 
 ```text
 /plugin marketplace add breakzplatform/telegram-rich-blocks
-/plugin install telegram-rich-blocks@telegram-rich-blocks-marketplace
+/plugin install telegram-rich-blocks@breakzplatform
 ```
 
 A local clone works too: pass its absolute path to `marketplace add`. The MCP server
